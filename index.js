@@ -1,51 +1,76 @@
 const express = require('express');
 const mysql = require('mysql2');
 const config = require('./config/config');
-const app = express();
-const PORT = 8880;
+const testData = require('./data');
 
-const conn = new mysql.createConnection(config);
+const { serverConfig, localConfig } = config;
 
-conn.connect(
-    function (err) { 
-    if (err) { 
-        console.log("!!! Cannot connect !!! Error:");
-        throw err;
-    }
-    else
-    {
-       console.log("Connection established.");
-           queryDatabase();
-    }   
+const conn = new mysql.createConnection(serverConfig);
+
+conn.connect((err) => {
+  if (err) {
+    console.log("!!! Cannot connect !!! Error:");
+    throw err;
+  } else {
+    console.log("Connection established.");
+    queryDatabase();
+  }
 });
 
-function queryTop25() {
-  conn.query('SELECT * FROM contestants LIMIT 25 ORDER BY ');
+function recordScore(req, res) {
+  const { name, score } = req.params;
+  const sql = 'INSERT INTO contestants (name, score) VALUES (?, ?);';
+
+  conn.query(sql, [name, score], function(err, result, fields) {
+    if (err) res.status(404).send(err);
+
+    res.status(201).send(JSON.stringify(result));
+  });
 }
 
-function queryDatabase() {
-   conn.query('DROP TABLE IF EXISTS contestants;', function (err, results, fields) {
-            if (err) throw err;
-            console.log('Dropped contestants table if existed.');
-        })
-   conn.query('CREATE TABLE contestants (id serial PRIMARY KEY, name VARCHAR(50), score INTEGER);', function(err, results, fields) {
-     console.log('created table ', err, results, fields);
-   });
-  conn.query('INSERT INTO contestants (name, score) VALUES (?, ?);', ['george', 10],
-              function (err, results, fields) {
-                  if (err) throw err;
-              else console.log('Inserted ' + results.affectedRows + ' row(s).');
-          })
-  conn.query('SELECT * FROM contestants;', (err, results, fields) => {
-    console.log('from contestants ', JSON.stringify(results), fields);
+function queryTop25(req, res) {
+  const sql = 'SELECT * FROM contestants ORDER BY score DESC LIMIT 25';
+
+  conn.query(sql, (err, result) => {
+    if (err) res.status(404).send(err);
+
+    res.status(200).send(JSON.stringify(result));
+  });
+}
+
+function deleteScore(req, res) {
+  const { name } = req.params;
+  const sql = `DELETE FROM contestants WHERE name = \'${name}\';`;
+
+  conn.query(sql, (err, result) => {
+    if (err) res.status(404).send(err);
+
+    res.status(201).send(result);
   })
 }
 
+function queryDatabase() {
+  conn.query('DROP TABLE IF EXISTS contestants;', (err) => {
+    if (err) throw err;
+  })
 
-app.get('/', (req, res) => {
-  res.status(200).send({name: 'you made it'});
-});
+  conn.query('CREATE TABLE contestants (id serial PRIMARY KEY, name VARCHAR(50), score INTEGER);', (err) =>  {
+    if (err) throw err;
+  });
 
-app.listen(PORT, () => {
-  console.log('now listening on port ', PORT);
+  conn.query('INSERT INTO contestants (name, score) VALUES ?;', [testData], (err) => {
+      if (err) throw err;
+  });
+}
+
+const app = express();
+
+app.get('/top-contestants', queryTop25);
+
+app.post('/contestants/:name/:score', recordScore);
+
+app.delete('/contestants/:name', deleteScore);
+
+app.listen(localConfig.port, () => {
+  console.log('now listening on port ', localConfig.port);
 });
