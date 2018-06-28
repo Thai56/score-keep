@@ -3,7 +3,7 @@ const { expect } = require('chai');
 const request = require('request');
 
 /* Was having issue with requiring port from config due to decrypt dependency */
-const url = `http://localhost:8880/contestants`;
+const url = 'http://localhost:8880/contestants';
 
 describe('Contestants API ', () => {
   it('should give a status 200 for all contestants ', (done) => {
@@ -11,8 +11,9 @@ describe('Contestants API ', () => {
       expect(result.statusCode).to.equal(200);
       expect(JSON.parse(body).length).to.equal(26);
       done();
-    }); 
-  })
+    });
+  });
+
   it('should give a status 200 for top 25 contestants ', (done) => {
     request(`${url}/top`, (error, response, body) => {
       expect(response.statusCode).to.equal(200);
@@ -35,9 +36,10 @@ describe('Contestants API ', () => {
     });
   });
 
-  it('should delete all of the contestants from the table ', () => {
+  it('should delete all of the contestants from the table ', (done) => {
     request.delete(`${url}`, (error, result) => {
       expect(result.statusCode).to.equal(202);
-    }); 
+      done();
+    });
   });
 });
