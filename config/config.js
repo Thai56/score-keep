@@ -1,22 +1,14 @@
-/* thaidemoserver  */
-const LOCAL_PORT = 8880;
+const { decrypt } = require('../encrypt');
 
 const serverConfig = {
-    host: `${process.argv.slice(2)}.mysql.database.azure.com`,
-    user: `myadmin@${process.argv.slice(2)}`,
-    password: 'Kewl1os1s',
-    database: 'contestants',
-    port: 3306,
-    ssl: true
-  };
-
-const localConfig = {
- port: LOCAL_PORT,
-}
-
-const config = {
-  serverConfig,
-  localConfig,
+  host: `${decrypt(process.argv.slice(2)[0])}.mysql.database.azure.com`,
+  user: `myadmin@${decrypt(process.argv.slice(2)[0])}`,
+  password: decrypt(process.argv.slice(3)[0]),
+  database: 'contestants',
+  port: 3306,
+  ssl: true,
 };
+
+const config = { serverConfig, LOCAL_PORT: 8880 };
 
 module.exports = config;
